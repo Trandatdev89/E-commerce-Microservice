@@ -1,0 +1,119 @@
+api:
+  prefix: /api/v1
+server:
+  port: 8222
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true  # Bật tính năng discovery locator để dùng tên dịch vụ
+          lower-case-service-id: true # Chuyển tên dịch vụ thành chữ thường
+      routes:
+        #Service :
+        - id: identity-service
+          uri: lb:http://identity-service
+          predicates:
+            - Path=${api.prefix}/identity/**
+          filters:
+            - StripPrefix=2
+        - id: profile-service
+          uri: lb:http://profile-service
+          predicates:
+            - Path=${api.prefix}/profile/**
+          filters:
+            - StripPrefix=2
+        - id: product-service
+          uri: lb:http://product-service
+          predicates:
+            - Path=${api.prefix}/product/**
+          filters:
+            - StripPrefix=2
+        - id: order-service
+          uri: lb:http://order-service
+          predicates:
+            - Path=${api.prefix}/order/**
+          filters:
+            - StripPrefix=2
+        - id: payment-service
+          uri: lb:http://payment-service
+          predicates:
+            - Path=${api.prefix}/payment/**
+          filters:
+            - StripPrefix=2
+        - id: notification-service
+          uri: lb:http://notification-service
+          predicates:
+            - Path=${api.prefix}/notification/**
+          filters:
+            - StripPrefix=2
+        - id: cart-service
+          uri: lb:http://cart-service
+          predicates:
+            - Path=${api.prefix}/cart/**
+          filters:
+            - StripPrefix=2
+        #API DOCUMENT :
+        - id: identity-service_api_docs
+          uri: lb:http://identity-service
+          predicates:
+            - Path=${api.prefix}/aggregate/identity/v3/api-docs
+          filters:
+            - RewritePath=${api.prefix}/aggregate/identity/v3/api-docs, /identity/api-docs
+        - id: profile-service_api_docs
+          uri: lb:http://profile-service
+          predicates:
+            - Path=${api.prefix}/aggregate/profile/v3/api-docs
+          filters:
+            - RewritePath=${api.prefix}/aggregate/profile/v3/api-docs, /profile/api-docs
+        - id: product-service_api_docs
+          uri: lb:http://product-service
+          predicates:
+            - Path=${api.prefix}/aggregate/product/v3/api-docs
+          filters:
+            - RewritePath=${api.prefix}/aggregate/product/v3/api-docs, /product/api-docs
+        - id: order-service_api_docs
+          uri: lb:http://order-service
+          predicates:
+            - Path=${api.prefix}/aggregate/order/v3/api-docs
+          filters:
+            - RewritePath=${api.prefix}/aggregate/order/v3/api-docs, /order/api-docs
+        - id: payment-service_api_docs
+          uri: lb:http://payment-service
+          predicates:
+            - Path=${api.prefix}/aggregate/payment/v3/api-docs
+          filters:
+            - RewritePath=${api.prefix}/aggregate/payment/v3/api-docs, /payment/api-docs
+        - id: notification-service_api_docs
+          uri: lb:http://notification-service
+          predicates:
+            - Path=${api.prefix}/aggregate/notification/v3/api-docs
+          filters:
+            - RewritePath=${api.prefix}/aggregate/notification/v3/api-docs, /notification/api-docs
+        - id: cart-service_api_docs
+          uri: lb:http://cart-service
+          predicates:
+            - Path=${api.prefix}/aggregate/cart/v3/api-docs
+          filters:
+            - RewritePath=${api.prefix}/aggregate/cart/v3/api-docs, /cart/api-docs
+
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls[0].name: identity-service
+    urls[0].url: ${api.prefix}/aggregate/identity/v3/api-docs
+    urls[1].name: profile-service
+    urls[1].url: ${api.prefix}/aggregate/profile/v3/api-docs
+    urls[2].name: product-service
+    urls[2].url: ${api.prefix}/aggregate/product/v3/api-docs
+    urls[3].name: order-service
+    urls[3].url: ${api.prefix}/aggregate/order/v3/api-docs
+    urls[4].name: payment-service
+    urls[4].url: ${api.prefix}/aggregate/payment/v3/api-docs
+    urls[5].name: notification-service
+    urls[5].url: ${api.prefix}/aggregate/notification/v3/api-docs
+    urls[6].name: cart-service
+    urls[6].url: ${api.prefix}/aggregate/cart/v3/api-docs
+  api-docs:
+    path: /api-docs

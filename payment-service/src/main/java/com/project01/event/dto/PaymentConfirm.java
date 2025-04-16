@@ -1,0 +1,23 @@
+package com.project01.event.dto;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.project01.paymentservice.entity.PaymentMethod;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class PaymentConfirm {
+    private String orderReference;
+    private BigDecimal amount;
+    private PaymentMethod paymentMethod;
+    private String customerFirstname;
+    private String customerLastname;
+    private String customerEmail;
+}

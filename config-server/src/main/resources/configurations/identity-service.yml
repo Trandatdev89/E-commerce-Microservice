@@ -1,0 +1,38 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:5000/Ecommerce?createDatabaseIfNotExist=true
+    username: tranquocdat
+    password: longga@12
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        enable_lazy_load_no_trans: true
+        format_sql: true
+    show-sql: true
+  kafka:
+    bootstrap-servers: localhost:9092
+server:
+  port: 8080
+  servlet:
+    context-path: /identity
+
+api:
+  gate-way: http://localhost:8222/api/v1/identity/auth
+
+jwt:
+  expiration: 86400
+  secretKey: LuNVqXkIK/leKNt+xBkwXK+K25U9cFa2E6v735ZSOQuEIF3B2bvwpEd9UDXiXsZ9SLC1kh4MyTaAxU6Vnq+NeQ==
+
+LEGEND:
+  CLOUD_NAME: ${LEGEND.CLOUD_NAME:ddjw9j8j6}
+  API_KEY: ${LEGEND.API_KEY:534695473389391}
+  API_SECRET: ${LEGEND.API_SECRET:7UAHnlL3AZnHon3uRPTF0RMAUpg}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs

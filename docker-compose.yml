@@ -1,0 +1,164 @@
+services:
+  zipkin:
+    container_name: zipkin
+    image: openzipkin/zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - microservices-net
+
+  mysql:
+    image: mysql
+    container_name: mysql_container
+    environment:
+      MYSQL_ROOT_PASSWORD: root  # Thêm mật khẩu cho root
+      MYSQL_DATABASE: home
+      MYSQL_USER: tranquocdat          # Đổi user khác tránh dùng "root"
+      MYSQL_PASSWORD: longga@12  # Đặt mật khẩu cho user
+    ports:
+      - "5000:3306"
+    networks:
+      - microservices-net
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  mongodb:
+    image: mongo
+    container_name: mongo_db
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo:/data
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=alibou
+      - MONGO_INITDB_ROOT_PASSWORD=alibou
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "22181:2181"
+    networks:
+      - microservices-net
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: ms_kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+    networks:
+      - microservices-net
+
+  redis:
+    image: redis:latest
+    container_name: redis-container
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - microservices-net
+
+#  elastic-search:
+#    image: elasticsearch:7.14.1
+#    container_name: elasticsearch
+#    restart: always
+#    ports:
+#      - "9200:9200"
+#    environment:
+#      - discovery.type=single-node
+#    networks:
+#      - microservices-net
+#
+#  kibana:
+#    image: kibana:7.14.1
+#    container_name: kibana
+#    restart: always
+#    ports:
+#      - "5601:5601"
+#    environment:
+#      - ELASTICSEARCH_HOSTS=http://elastic-search:9200
+#    networks:
+#      - microservices-net
+#
+#  logstash:
+#    image: logstash:7.14.1
+#    container_name: logstash
+#    restart: always
+#    ports:
+#      - "5044:5044"
+#    #      - "9600:9600"
+#    volumes:
+#      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+#    environment:
+#      - XPACK_MONITORING_ELASTICSEARCH_HOSTS=http://elastic-search:9200
+#      - XPACK_MONITORING_ENABLED=true
+#    networks:
+#      - microservices-net
+
+networks:
+  microservices-net:
+    driver: bridge
+  microservices-ecommerce:
+    driver: bridge
+
+volumes:
+  redis-data:
+  mongo:
+  mysql_data:
+
+#  config-server:
+#    build:
+#      context: ./config-server
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8888:8888"
+#    networks:
+#      - microservices-ecommerce
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:8888/actuator/health" ]
+#      interval: 10s
+#      retries: 5
+#
+#  discovery-server:
+#    build:
+#      context: ./discovery-server
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8761:8761"
+#    depends_on:
+#      config-server:
+#        condition: service_healthy
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
+#      interval: 10s
+#      retries: 5
+#    networks:
+#      - microservices-ecommerce
+#
+#  api-gateway:
+#    build:
+#      context: ./api-gateway
+#      dockerfile: Dockerfile
+#    ports:
+#      - "8222:8222"
+#    depends_on:
+#      config-server:
+#        condition: service_healthy
+#      discovery-server:
+#        condition: service_healthy
+#    networks:
+#      - microservices-ecommerce

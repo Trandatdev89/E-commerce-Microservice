@@ -1,0 +1,26 @@
+spring:
+  data:
+    mongodb:
+      username: alibou
+      password: alibou
+      host: localhost
+      port: 27017
+      database: Ecommerce
+      authentication-database: admin
+  kafka:
+    bootstrap-servers: localhost:9092
+
+server:
+  port: 8085
+  servlet:
+    context-path: /notification
+
+mailjet:
+  api-key: 61a7d3173515fb84be6d8a2c6ce433fe
+  api-secretKey: 470eeb057bc489f636bbe96ee0b952aa
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs
