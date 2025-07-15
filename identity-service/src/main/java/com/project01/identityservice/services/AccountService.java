@@ -7,4 +7,5 @@ import java.util.List;
 public interface AccountService {
     List<AccountDTO> getAllAccount();
     AccountDTO getAccountById(String id);
+    List<AccountDTO> searchAccountByUsername(String username);
 }

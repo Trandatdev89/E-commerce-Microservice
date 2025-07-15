@@ -17,6 +17,7 @@ import java.text.ParseException;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(value = "/auth")
+@CrossOrigin("*")
 public class AuthController {
 
     private final AuthService accountService;

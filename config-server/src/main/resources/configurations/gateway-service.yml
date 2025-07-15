@@ -53,6 +53,12 @@ spring:
             - Path=${api.prefix}/cart/**
           filters:
             - StripPrefix=2
+        - id: chat-service
+          uri: lb:http://chat-service
+          predicates:
+            - Path=${api.prefix}/chat/**
+          filters:
+            - StripPrefix=2
         #API DOCUMENT :
         - id: identity-service_api_docs
           uri: lb:http://identity-service

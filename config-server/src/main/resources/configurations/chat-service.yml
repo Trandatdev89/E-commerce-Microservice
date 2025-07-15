@@ -1,0 +1,13 @@
+server:
+  port: 9090
+  servlet:
+    context-path: /chat
+spring:
+  data:
+    mongodb:
+      uri: mongodb://root:root@localhost:27017/chat-service?authSource=admin
+      auto-index-creation: true
+#app:
+#  services:
+#    profile:
+#      url: http://localhost:8081/profile

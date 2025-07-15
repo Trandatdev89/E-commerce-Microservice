@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -38,5 +39,13 @@ public class AccountServiceImpl implements AccountService {
         return accountConverter.toAccountDTO(accountEntities);
     }
 
-
+    @Override
+    public List<AccountDTO> searchAccountByUsername(String username) {
+        List<AccountEntity> accountEntities= accountRepository.findAllByUsernameLike(username);
+        List<AccountDTO> accountDTOS = new ArrayList<>();
+        for (AccountEntity accountEntity : accountEntities) {
+            accountDTOS.add(accountConverter.toAccountDTO(accountEntity));
+        }
+        return accountDTOS;
+    }
 }

@@ -47,7 +47,7 @@ public class JwtServiceImpl implements JwtService {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
                 .subject(accountEntity.getUsername())
-                .issuer("identity-service")
+                .issuer(accountEntity.getId())
                 .issueTime(new Date())
                 .expirationTime(isRefresh ?
                         (new Date(Instant.now().plus(expiration+518400, ChronoUnit.SECONDS).toEpochMilli()))

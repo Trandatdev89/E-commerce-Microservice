@@ -12,7 +12,7 @@ services:
     container_name: mysql_container
     environment:
       MYSQL_ROOT_PASSWORD: root  # Thêm mật khẩu cho root
-      MYSQL_DATABASE: home
+      MYSQL_DATABASE: Ecommerce
       MYSQL_USER: tranquocdat          # Đổi user khác tránh dùng "root"
       MYSQL_PASSWORD: longga@12  # Đặt mật khẩu cho user
     ports:

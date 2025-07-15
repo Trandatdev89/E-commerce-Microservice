@@ -2,18 +2,12 @@ package com.project01.identityservice.controller;
 
 import com.project01.identityservice.dto.response.AccountDTO;
 import com.project01.identityservice.dto.response.ApiResponse;
-import com.project01.identityservice.entity.AccountEntity;
-import com.project01.identityservice.repository.AccountRepository;
 import com.project01.identityservice.services.AccountService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -21,6 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping(value = "/account")
+@CrossOrigin(value = "*")
 public class AccountController {
 
     private final AccountService accountService;
@@ -34,6 +29,18 @@ public class AccountController {
                 .code(200)
                 .message("OK")
                 .data(accountService.getAllAccount())
+                .build();
+    }
+
+    @GetMapping(value = "/username")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(summary = "API lấy ra tất cả tài khoản",
+            description = "Dùng để lấy ra tất cả các tài khoản nhưng chỉ role admin mới có quyền")
+    public ApiResponse<List<AccountDTO>> searchAccountByUsername(@RequestParam String username) {
+        return ApiResponse.<List<AccountDTO>>builder()
+                .code(200)
+                .message("OK")
+                .data(accountService.searchAccountByUsername(username))
                 .build();
     }
 

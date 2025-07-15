@@ -4,6 +4,9 @@ package com.project01.apigateway.config;
 import com.project01.apigateway.httpClient.IdentityClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.support.WebClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
@@ -23,4 +26,7 @@ public class WebClientConfig {
                  .build();
          return serviceProxyFactory.createClient(IdentityClient.class);
     }
+
+
+
 }
