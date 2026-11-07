@@ -1,32 +1,33 @@
 package com.project01.identityservice.entity;
 
+import com.project01.common.core.entity.AuditEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
-
-@Data
+@Getter
+@Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "role")
-public class RoleEntity {
+@Table(name = "idt_role")
+public class RoleEntity extends AuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
-    @Column
-    private String name;
-
-    @Column
+    @Column(name = "code", nullable = false, length = 50)
     private String code;
 
-    @ManyToMany(fetch = FetchType.LAZY,mappedBy = "roles")
-    private List<AccountEntity> accounts = new ArrayList<>();
+    @Column(name = "name", nullable = false, length = 100)
+    private String name;
+
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private Boolean isActive = true;
 }

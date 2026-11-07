@@ -1,6 +1,6 @@
 package com.project01.profileservice.controller;
 
-import com.project01.profileservice.dto.response.ApiResponse;
+import com.project01.common.core.dto.response.ResponseData;
 import com.project01.profileservice.dto.response.ProfileDTO;
 import com.project01.profileservice.service.ProfileService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,36 +21,24 @@ public class ProfileController {
     @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "Lây thông tin cá nhân của nhiều người dùng",
             description = "Lây thông tin cá nhân của nhiều người dùng")
-    public ApiResponse<List<ProfileDTO>> getAllProfiles() {
-        return ApiResponse.<List<ProfileDTO>>builder()
-                .code(200)
-                .message("OK")
-                .data(profileService.getAllProfiles())
-                .build();
+    public ResponseData<List<ProfileDTO>> getAllProfiles() {
+        return new ResponseData<List<ProfileDTO>>().success(profileService.getAllProfiles());
     }
 
     @GetMapping(value = "/private/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('ADMIN','CLIENT')")
     @Operation(summary = "Lây thông tin cá nhân của người dùng theo ID",
             description = "Lây thông tin cá nhân của người dùng theo ID")
-    public ApiResponse<ProfileDTO> getProfileByUserId(@PathVariable String id) {
-        return ApiResponse.<ProfileDTO>builder()
-                .code(200)
-                .message("OK")
-                .data(profileService.getProfileByUserId(id))
-                .build();
+    public ResponseData<ProfileDTO> getProfileByUserId(@PathVariable String id) {
+        return new ResponseData<ProfileDTO>().success(profileService.getProfileByUserId(id));
     }
 
     @PatchMapping(value = "/private/{userId}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('ADMIN','CLIENT')")
     @Operation(summary = "API dùng để cập nhập người dùng theo ID",
             description = "API dùng để tìm kiếm người dùng theo ID")
-    public ApiResponse<ProfileDTO> updateProfile(@PathVariable String userId,@RequestBody ProfileDTO profileDTO) {
-        return ApiResponse.<ProfileDTO>builder()
-                .code(200)
-                .message("OK")
-                .data(profileService.updateProfile(userId,profileDTO))
-                .build();
+    public ResponseData<ProfileDTO> updateProfile(@PathVariable String userId,@RequestBody ProfileDTO profileDTO) {
+        return new ResponseData<ProfileDTO>().success(profileService.updateProfile(userId,profileDTO));
     }
 
 }

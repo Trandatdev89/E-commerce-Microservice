@@ -4,67 +4,71 @@ import com.project01.cartservice.convertor.CartConvertor;
 import com.project01.cartservice.dto.request.CartRequest;
 import com.project01.cartservice.dto.response.CartResponse;
 import com.project01.cartservice.entity.Cart;
-import com.project01.cartservice.exception.custom.AppException;
-import com.project01.cartservice.exception.custom.ErrorCode;
+import com.project01.cartservice.entity.CartItem;
+import com.project01.cartservice.exception.ErrorCode;
+import com.project01.cartservice.repository.CartItemRepository;
 import com.project01.cartservice.repository.CartRepository;
 import com.project01.cartservice.services.CartService;
 import com.project01.cartservice.services.RedisService;
+import com.project01.common.core.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
 
     private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
     private final RedisService redisService;
     private final CartConvertor cartConvertor;
 
     @Override
+    @Transactional
     public void addItemCart(CartRequest cartRequest) {
-
-        Optional<Cart> cart = cartRepository.findByUserIdAndProductId
-                (cartRequest.userId(),cartRequest.productId());
-
-        if(cart.isPresent()){
-            Cart updateCart = cart.get();
-            updateCart.setQuantityOrder(cartRequest.quantityOrder());
-            updateCart.setTotalAmount(cartRequest.totalAmount());
-            cartRepository.save(updateCart);
-        }else{
-            cartRepository.save(cartConvertor.toCart(cartRequest));
+        if (cartRequest.quantity() == null || cartRequest.quantity() <= 0) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST);
         }
+        Cart cart = cartRepository.findByUserId(cartRequest.userId())
+                .orElseGet(() -> cartRepository.save(Cart.builder().userId(cartRequest.userId()).build()));
 
-        redisService.deleteData("user:"+cartRequest.userId());
+        CartItem item = cartItemRepository.findByCartIdAndSkuId(cart.getId(), cartRequest.skuId())
+                .orElseGet(() -> CartItem.builder().cartId(cart.getId()).skuId(cartRequest.skuId()).build());
+        item.setQuantity(cartRequest.quantity());
+        cartItemRepository.save(item);
+
+        redisService.deleteData(cacheKey(cartRequest.userId()));
     }
 
     @Override
     public List<CartResponse> getItemFromCart(String userId) {
-        String key = "user:"+userId;
-        if(redisService.existsKey(key)){
-            return (List<CartResponse>) redisService.getData(key);
+        String key = cacheKey(userId);
+        if (redisService.existsKey(key)) {
+            return redisService.getData(key);
         }
-        List<Cart> cart = cartRepository.findAllByUserId(userId);
-        if(cart.isEmpty()){
-            throw new AppException(ErrorCode.CART_EMPTY);
+        List<CartItem> items = cartRepository.findByUserId(userId)
+                .map(cart -> cartItemRepository.findAllByCartIdOrderByAddedAtDesc(cart.getId()))
+                .orElse(List.of());
+        if (items.isEmpty()) {
+            throw new BusinessException(ErrorCode.CART_EMPTY);
         }
-        List<CartResponse> cartResponse = new ArrayList<>();
-        for (Cart item : cart) {
-            cartResponse.add(cartConvertor.toCartResponse(item));
-        }
+        List<CartResponse> cartResponse = cartConvertor.toCartResponses(userId, items);
         redisService.saveData(key, cartResponse);
         return cartResponse;
     }
 
     @Override
-    public void deleteItemFromCart(List<Long> idProduct,String userId) {
-        cartRepository.deleteByProductIdInAndUserId(idProduct,userId);
-        redisService.deleteData("user:"+userId);
+    @Transactional
+    public void deleteItemFromCart(List<Long> skuIds, String userId) {
+        cartRepository.findByUserId(userId)
+                .ifPresent(cart -> cartItemRepository.deleteByCartIdAndSkuIdIn(cart.getId(), skuIds));
+        redisService.deleteData(cacheKey(userId));
+    }
+
+    private String cacheKey(String userId) {
+        return "user:" + userId;
     }
 }

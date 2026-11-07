@@ -1,9 +1,9 @@
 package com.project01.paymentservice.entity;
 
+/** Trùng với pay_method.code */
 public enum PaymentMethod {
-    PAYPAL,
-    CREDIT_CARD,
-    VISA,
-    MASTER_CARD,
-    BITCOIN
+    COD,
+    VNPAY,
+    MOMO,
+    BANK_TRANSFER
 }

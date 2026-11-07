@@ -5,6 +5,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Dữ liệu đăng ký. Không có field role: role do server gán (mặc định CLIENT),
+ * client không được tự chọn.
+ */
 @Data
 @Builder
 @AllArgsConstructor

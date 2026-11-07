@@ -3,6 +3,9 @@ package com.project01.paymentservice.repository;
 import com.project01.paymentservice.entity.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
+
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
-    Payment findByOrderId(Long id);
+    Optional<Payment> findByIdempotencyKey(String idempotencyKey);
+    Optional<Payment> findTopByOrderCodeOrderByCreatedAtDesc(String orderCode);
 }

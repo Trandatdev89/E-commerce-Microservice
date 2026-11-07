@@ -1,58 +1,47 @@
 package com.project01.productservice.entity;
 
-import com.project01.productservice.category.Category;
+import com.project01.common.core.entity.AuditEntity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.util.ArrayList;
-import java.util.List;
-
-
+/**
+ * Sản phẩm gốc (SPU). Giá và biến thể nằm ở Sku, ảnh nằm ở ProductImage.
+ * Danh mục / thương hiệu lưu bằng id, không dùng @ManyToOne.
+ */
+@Getter
+@Setter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
-@Data
 @Entity
-@Table(name = "product")
-public class Product {
+@Table(name = "prd_product")
+public class Product extends AuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
 
-    @Column
+    @Column(name = "category_id", nullable = false)
+    private Long categoryId;
+
+    @Column(name = "brand_id")
+    private Long brandId;
+
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column
+    @Column(name = "slug", nullable = false, length = 280)
+    private String slug;
+
+    @Column(name = "description", columnDefinition = "text")
     private String description;
 
-    @Column
-    private Long availableQuantity;
-
-    @Column
-    private Long price;
-
-    @Column
-    private String image;
-
-    @ManyToOne
-    @JoinColumn(name = "category_id")
-    private Category category;
-
-    @ManyToOne
-    @JoinColumn(name = "brand_id")
-    private Brand brand;
-
     @Enumerated(EnumType.STRING)
-    private Address address;
-
-    @ManyToMany(fetch = FetchType.LAZY,cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinTable(name = "product_ship",
-            joinColumns = @JoinColumn(name = "product_id",nullable = false),
-            inverseJoinColumns = @JoinColumn(name = "ship_id",nullable = false))
-    List<Ship> ships = new ArrayList<>();
-
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
+    private ProductStatus status = ProductStatus.DRAFT;
 }

@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.project01</groupId>
+    <artifactId>project01-parent</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>project01-parent</name>
+    <description>Parent POM + BOM cho toàn bộ hệ thống microservice project01</description>
+
+    <!-- ============================================================
+         DANH SÁCH MODULE — đây là lý do bạn chỉ cần chạy 1 lệnh
+         `mvn clean install` ở thư mục gốc là build được TOÀN BỘ hệ
+         thống, theo đúng thứ tự phụ thuộc (common build trước, service
+         build sau) mà không cần bạn tự cài từng module bằng tay.
+         ============================================================ -->
+    <modules>
+        <module>common/common-core</module>
+        <module>common/common-security-jwt</module>
+        <module>common/common-web</module>
+        <module>common/common-feign</module>
+        <module>common/common-kafka</module>
+
+        <module>config-server</module>
+        <module>discovery-server</module>
+        <module>api-gateway</module>
+        <module>identity-service</module>
+        <module>profile-service</module>
+        <module>product-service</module>
+        <module>cart-service</module>
+        <module>order-service</module>
+        <module>payment-service</module>
+        <module>notification-service</module>
+        <module>chat-service</module>
+    </modules>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <java.version>17</java.version>
+
+        <!-- MỘT nơi duy nhất khai version — sửa ở đây, cả hệ thống đổi theo -->
+        <spring-boot.version>3.2.4</spring-boot.version>
+        <spring-cloud.version>2023.0.0</spring-cloud.version>
+        <lombok.version>1.18.30</lombok.version>
+        <springdoc.version>2.5.0</springdoc.version>
+        <mapstruct.version>1.5.5.Final</mapstruct.version>
+
+        <!-- Version của chính các module common nội bộ -->
+        <project01-common.version>0.0.1-SNAPSHOT</project01-common.version>
+    </properties>
+
+    <!-- ============================================================
+         BOM (Bill of Materials): import các BOM chuẩn của Spring +
+         khai version cho từng module common nội bộ. Nhờ đây, mọi
+         module con (kể cả common-core, common-security-jwt...) và
+         mọi service KHÔNG cần ghi <version> khi khai dependency nữa.
+         ============================================================ -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Các module common nội bộ - service chỉ cần khai artifactId, không cần version -->
+            <dependency>
+                <groupId>com.project01</groupId>
+                <artifactId>common-core</artifactId>
+                <version>${project01-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.project01</groupId>
+                <artifactId>common-security-jwt</artifactId>
+                <version>${project01-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.project01</groupId>
+                <artifactId>common-web</artifactId>
+                <version>${project01-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.project01</groupId>
+                <artifactId>common-feign</artifactId>
+                <version>${project01-common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.project01</groupId>
+                <artifactId>common-kafka</artifactId>
+                <version>${project01-common.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- Mọi service/module con đều thừa hưởng phần build này, không cần khai lại -->
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                    <configuration>
+                        <annotationProcessorPaths>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                    <configuration>
+                        <excludes>
+                            <exclude>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <!-- Lombok gần như service nào cũng dùng -> khai 1 lần ở đây luôn cho gọn -->
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+</project>

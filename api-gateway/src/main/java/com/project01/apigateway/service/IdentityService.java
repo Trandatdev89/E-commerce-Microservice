@@ -1,7 +1,7 @@
 package com.project01.apigateway.service;
 
 import com.project01.apigateway.dto.request.IntrospectTokenRequest;
-import com.project01.apigateway.dto.response.ApiResponse;
+import com.project01.apigateway.dto.response.ResponseData;
 import com.project01.apigateway.dto.response.AuthenticationResponse;
 import com.project01.apigateway.httpClient.IdentityClient;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,7 @@ public class IdentityService {
 
     private final IdentityClient identityClient;
 
-    public Mono<ApiResponse<AuthenticationResponse>> authenticate(String token) {
+    public Mono<ResponseData<AuthenticationResponse>> authenticate(String token) {
          return identityClient.introspect(IntrospectTokenRequest.builder().token(token).build());
     }
 }

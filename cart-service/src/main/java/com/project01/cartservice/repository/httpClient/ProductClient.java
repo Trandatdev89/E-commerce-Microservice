@@ -1,16 +1,18 @@
 package com.project01.cartservice.repository.httpClient;
 
 
-import com.project01.cartservice.dto.response.ApiResponse;
-import com.project01.cartservice.dto.response.ProductResponse;
+import com.project01.cartservice.dto.response.SkuResponse;
+import com.project01.common.core.dto.response.ResponseData;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "product-client",url = "http://localhost:8082/product")
+import java.util.List;
+
+@FeignClient(name = "product-client", url = "http://localhost:8082/product")
 public interface ProductClient {
 
-    @GetMapping(value = "/public/{id}",consumes = MediaType.APPLICATION_JSON_VALUE)
-    ApiResponse<ProductResponse> getProductById(@PathVariable Long id);
+    @GetMapping(value = "/public/skus", consumes = MediaType.APPLICATION_JSON_VALUE)
+    ResponseData<List<SkuResponse>> getSkusByIds(@RequestParam("ids") List<Long> ids);
 }

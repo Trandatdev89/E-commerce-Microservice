@@ -17,7 +17,9 @@ public class PaymentDTO {
     private Long id;
     private PaymentMethod paymentMethod;
     private BigDecimal amount;
+    /** order_code */
     private String orderReference;
     private Long orderId;
+    private String customerId;
     private ProfileDTO customer;
 }

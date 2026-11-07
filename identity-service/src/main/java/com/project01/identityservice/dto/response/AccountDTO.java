@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +16,11 @@ import java.util.List;
 public class AccountDTO {
     private String id;
     private String username;
-    private String password;
+    private String email;
+    private String phone;
+    private String status;
+    private Boolean emailVerified;
+    private LocalDateTime lastLoginAt;
+    @Builder.Default
     private List<String> roles = new ArrayList<>();
 }

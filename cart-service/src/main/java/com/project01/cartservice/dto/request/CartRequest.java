@@ -1,5 +1,8 @@
 package com.project01.cartservice.dto.request;
 
 
-public record CartRequest(String userId,Long productId,double totalAmount,int quantityOrder){
+/**
+ * Thêm / cập nhật sản phẩm trong giỏ. quantity là số lượng mới (ghi đè), không phải cộng thêm.
+ */
+public record CartRequest(String userId, Long skuId, Integer quantity) {
 }

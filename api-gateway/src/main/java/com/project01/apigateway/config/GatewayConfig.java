@@ -2,7 +2,10 @@ package com.project01.apigateway.config;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project01.apigateway.dto.response.ApiResponse;
+import com.project01.apigateway.dto.response.ResponseData;
+import org.springframework.http.MediaType;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import com.project01.apigateway.service.IdentityService;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.NonFinal;
@@ -28,6 +31,8 @@ import java.util.List;
 public class GatewayConfig implements GlobalFilter, Ordered {
 
     private final IdentityService identityService;
+    private static final String UNAUTHENTICATED_MESSAGE = "Tài khoản chưa được xác thực, yêu cầu đăng nhập!";
+
     private final ObjectMapper objectMapper;
 
     @Value("${api.prefix}")
@@ -46,16 +51,16 @@ public class GatewayConfig implements GlobalFilter, Ordered {
         }
         List<String> authHeader =exchange.getRequest().getHeaders().get("Authorization");
         if(CollectionUtils.isEmpty(authHeader)) {
-            return Unauthenticated(exchange.getResponse());
+            return Unauthenticated(exchange);
         }
         String token = authHeader.get(0).replace("Bearer ","").trim();
         return identityService.authenticate(token).flatMap(authenticationResponseApiResponse -> {
              if(authenticationResponseApiResponse.getData().isValid()){
                  return chain.filter(exchange);
              }else{
-                 return Unauthenticated(exchange.getResponse());
+                 return Unauthenticated(exchange);
              }
-        }).onErrorResume(throwable ->  Unauthenticated(exchange.getResponse()));
+        }).onErrorResume(throwable ->  Unauthenticated(exchange));
     }
 
     @Override
@@ -67,19 +72,25 @@ public class GatewayConfig implements GlobalFilter, Ordered {
         return Arrays.stream(publicEnpoint).anyMatch(item->serverHttpRequest.getURI().getPath().matches(apiPrefix+item));
     }
 
-    private Mono<Void> Unauthenticated(ServerHttpResponse response){
-        ApiResponse apiResponse = ApiResponse.builder()
-                .code(401)
-                .message("Chua xac thuc")
+    private Mono<Void> Unauthenticated(ServerWebExchange exchange){
+        ServerHttpResponse response = exchange.getResponse();
+        // Cùng mã lỗi với CommonErrorCode.UNAUTHORIZED của common-core
+        ResponseData<Object> responseData = ResponseData.builder()
+                .status(HttpStatus.UNAUTHORIZED.value())
+                .error(UNAUTHENTICATED_MESSAGE)
+                .path(exchange.getRequest().getURI().getPath())
+                .processDate(LocalDateTime.now())
+                .soaErrorCode("GL_ER_401")
+                .soaErrorDesc(UNAUTHENTICATED_MESSAGE)
                 .build();
         String body = null;
         try {
-            body = objectMapper.writeValueAsString(apiResponse);
+            body = objectMapper.writeValueAsString(responseData);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
         response.setStatusCode(HttpStatus.UNAUTHORIZED);
-        response.getHeaders().add("Content-Type", "application/json");
-        return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes())));
+        response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8))));
     }
 }

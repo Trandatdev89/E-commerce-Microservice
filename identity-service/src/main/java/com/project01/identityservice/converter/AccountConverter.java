@@ -4,15 +4,21 @@ import com.project01.identityservice.dto.response.AccountDTO;
 import com.project01.identityservice.entity.AccountEntity;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 public class AccountConverter {
 
-    public AccountDTO toAccountDTO(AccountEntity accountEntity){
+    public AccountDTO toAccountDTO(AccountEntity accountEntity, List<String> roles) {
         return AccountDTO.builder()
                 .id(accountEntity.getId())
-                .password(accountEntity.getPassword())
                 .username(accountEntity.getUsername())
-                .roles(accountEntity.getRoles().stream().map(item->item.getCode().toString()).toList())
+                .email(accountEntity.getEmail())
+                .phone(accountEntity.getPhone())
+                .status(accountEntity.getStatus().name())
+                .emailVerified(accountEntity.getEmailVerified())
+                .lastLoginAt(accountEntity.getLastLoginAt())
+                .roles(roles)
                 .build();
     }
 }

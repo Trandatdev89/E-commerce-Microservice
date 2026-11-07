@@ -1,6 +1,5 @@
 package com.project01.productservice.repository.criteria;
 
-import com.project01.productservice.entity.Address;
 import com.project01.productservice.entity.Product;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;

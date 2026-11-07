@@ -1,10 +1,10 @@
 package com.project01.profileservice.service.impl;
 
+import com.project01.common.core.exception.BusinessException;
 import com.project01.profileservice.dto.response.ProfileDTO;
 import com.project01.profileservice.dto.response.RegisterDTO;
 import com.project01.profileservice.entity.ProfileEntity;
-import com.project01.profileservice.exception.custom.AppException;
-import com.project01.profileservice.exception.custom.ErrorCode;
+import com.project01.profileservice.exception.ErrorCode;
 import com.project01.profileservice.repository.ProfileRepository;
 import com.project01.profileservice.service.ProfileService;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +23,8 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public void createProfile(RegisterDTO registerDTO) {
-          ProfileEntity profileEntity = modelMapper.map(registerDTO, ProfileEntity.class);
-          profileRepository.save(profileEntity);
+        ProfileEntity profileEntity = modelMapper.map(registerDTO, ProfileEntity.class);
+        profileRepository.save(profileEntity);
     }
 
     @Override
@@ -39,13 +39,13 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public ProfileDTO getProfileByUserId(String id) {
-        ProfileDTO profileDTO = modelMapper.map(profileRepository.findByUserid(id).orElseThrow(()-> new AppException(ErrorCode.USER_NOTFOUND)), ProfileDTO.class);
+        ProfileDTO profileDTO = modelMapper.map(profileRepository.findByUserid(id).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOTFOUND)), ProfileDTO.class);
         return profileDTO;
     }
 
     @Override
     public ProfileDTO updateProfile(String userId, ProfileDTO profileDTO) {
-        var profileEntity = profileRepository.findByUserid(userId).orElseThrow(()-> new AppException(ErrorCode.USER_NOTFOUND));
+        var profileEntity = profileRepository.findByUserid(userId).orElseThrow(() -> new BusinessException(ErrorCode.USER_NOTFOUND));
         ProfileEntity updateProfile = modelMapper.map(profileDTO, ProfileEntity.class);
         profileRepository.save(updateProfile);
         return modelMapper.map(updateProfile, ProfileDTO.class);

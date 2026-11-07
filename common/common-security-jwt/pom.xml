@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.project01</groupId>
+        <artifactId>project01-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>common-security-jwt</artifactId>
+    <packaging>jar</packaging>
+    <name>common-security-jwt</name>
+    <description>WebSecurityConfig + JwtDecoder + entry point + access denied dùng chung (Resource Server, servlet-based)</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.project01</groupId>
+            <artifactId>common-core</artifactId>
+        </dependency>
+
+        <!-- compile scope thật -> service add common-security-jwt là có luôn security + oauth2-resource-server,
+             không cần tự khai lại 2 dependency này nữa. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+    </dependencies>
+</project>

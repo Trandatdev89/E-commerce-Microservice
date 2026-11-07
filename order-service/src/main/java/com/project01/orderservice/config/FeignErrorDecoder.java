@@ -1,8 +1,5 @@
 package com.project01.orderservice.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project01.orderservice.exception.custom.AppException;
-import com.project01.orderservice.exception.custom.ErrorCode;
 import com.project01.orderservice.exception.custom.ResourceNotFoundException;
 import feign.Response;
 import feign.codec.ErrorDecoder;

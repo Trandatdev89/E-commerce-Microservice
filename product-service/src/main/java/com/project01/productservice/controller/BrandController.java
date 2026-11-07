@@ -1,11 +1,9 @@
 package com.project01.productservice.controller;
 
 
+import com.project01.common.core.dto.response.ResponseData;
 import com.project01.productservice.brand.BrandDTO;
 import com.project01.productservice.brand.BrandServiceImpl;
-import com.project01.productservice.category.CategoryDTO;
-import com.project01.productservice.category.CategoryServiceImpl;
-import com.project01.productservice.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,11 +23,8 @@ public class BrandController {
     @PreAuthorize("hasAnyRole('ADMIN')")
     @Operation(summary = "API tạo mới 1 hãng",
             description = "API tạo mới 1 hãng")
-    public ApiResponse createBrand(@RequestBody BrandDTO brandDTO) {
+    public ResponseData<Void> createBrand(@RequestBody BrandDTO brandDTO) {
         brandService.createBrand(brandDTO);
-        return ApiResponse.builder()
-                .code(200)
-                .message("Success")
-                .build();
+        return new ResponseData<Void>().success();
     }
 }

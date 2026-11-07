@@ -5,27 +5,24 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.project01.common.core.exception.BusinessException;
+import com.project01.common.core.services.RedisService;
+import com.project01.common.security.jwt.CustomUserDetail;
 import com.project01.identityservice.entity.AccountEntity;
-import com.project01.identityservice.entity.InValidTokenEntity;
-import com.project01.identityservice.exception.custom.AppException;
-import com.project01.identityservice.exception.custom.ErrorCode;
+import com.project01.identityservice.exception.ErrorCode;
 import com.project01.identityservice.repository.AccountRepository;
-import com.project01.identityservice.repository.InValidTokenRepository;
 import com.project01.identityservice.services.JwtService;
+import com.project01.identityservice.utils.RedisKeyUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.stereotype.Service;
 
-import javax.xml.crypto.Data;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -40,20 +37,21 @@ public class JwtServiceImpl implements JwtService {
     private String secretKey;
 
     private final AccountRepository accountRepository;
-    private final InValidTokenRepository invalidTokenRepository;
+    private final RedisService redisService;
 
     @Override
-    public String generateAccessToken(AccountEntity accountEntity,boolean isRefresh) {
+    public String generateAccessToken(CustomUserDetail customUserDetail, boolean isRefresh) {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(accountEntity.getUsername())
-                .issuer(accountEntity.getId())
+                .subject(customUserDetail.getUsername())
+                .issuer(customUserDetail.getUserId())
                 .issueTime(new Date())
                 .expirationTime(isRefresh ?
-                        (new Date(Instant.now().plus(expiration+518400, ChronoUnit.SECONDS).toEpochMilli()))
+                        (new Date(Instant.now().plus(expiration + 518400, ChronoUnit.SECONDS).toEpochMilli()))
                         : (new Date(Instant.now().plus(expiration, ChronoUnit.SECONDS).toEpochMilli())))
                 .jwtID(UUID.randomUUID().toString())
-                .claim("scope", accountEntity.getAuthorities().stream().map(item->item.getAuthority().toString()).collect(Collectors.joining(" ")))
+                // Mã role cách nhau bởi dấu cách, vd "ADMIN CLIENT". Resource server tự thêm tiền tố ROLE_
+                .claim("scope", String.join(" ", customUserDetail.getRoles()))
                 .build();
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
         JWSObject jwsObject = new JWSObject(jwsHeader, payload);
@@ -69,13 +67,7 @@ public class JwtServiceImpl implements JwtService {
     public String generateRefreshToken(String token) throws ParseException, JOSEException {
         SignedJWT verified = verifyToken(token);
         AccountEntity accountEntity = accountRepository.findByUsername(verified.getJWTClaimsSet().getSubject()).get();
-        invalidTokenRepository.save(InValidTokenEntity.builder()
-                .jwtId(verified.getJWTClaimsSet().getJWTID())
-                .expiryTime(verified.getJWTClaimsSet().getExpirationTime())
-                .account(accountEntity)
-                .build());
-        var refreshToken = generateAccessToken(accountEntity,true);
-        return refreshToken;
+        return null;
     }
 
     @Override
@@ -84,22 +76,24 @@ public class JwtServiceImpl implements JwtService {
         JWSVerifier jwsVerifier = new MACVerifier(secretKey);
         boolean verified = signedJWT.verify(jwsVerifier);
         log.info("JWT verified: " + verified);
-        AccountEntity accountEntity = accountRepository
-                .findByUsername(signedJWT.getJWTClaimsSet().getSubject())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOTFOUND));
         Date expireTime = signedJWT.getJWTClaimsSet().getExpirationTime();
-        if(!(verified &&expireTime.after(new Date()))) {
-            throw new AppException(ErrorCode.INVALID_TOKEN);
+        if (!(verified && expireTime.after(new Date()))) {
+            log.info("JWT is expireTime already : {}", token);
+            throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
-        if(invalidTokenRepository.existsByJwtId(signedJWT.getJWTClaimsSet().getJWTID())){
-            throw new AppException(ErrorCode.INVALID_TOKEN);
+
+        String redisJwtKey = RedisKeyUtil
+                .generateKey(RedisKeyUtil.JWT_BLACKLIST, signedJWT.getJWTClaimsSet().getJWTID());
+        if (redisService.existsKey(redisJwtKey)) {
+            log.info("JWT is blacklist already : {}", token);
+            throw new BusinessException(ErrorCode.INVALID_TOKEN);
         }
         return signedJWT;
     }
 
     @Override
-    public boolean introspectToken(String token){
-       boolean isValid = false;
+    public boolean introspectToken(String token) {
+        boolean isValid = false;
         try {
             SignedJWT signedJWT = verifyToken(token);
             isValid = true;
@@ -108,6 +102,6 @@ public class JwtServiceImpl implements JwtService {
         } catch (JOSEException e) {
             throw new RuntimeException(e);
         }
-       return isValid;
+        return isValid;
     }
 }

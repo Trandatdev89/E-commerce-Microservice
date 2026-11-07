@@ -16,6 +16,12 @@
         <option value="$PROJECT_DIR$/search-service/pom.xml" />
         <option value="$PROJECT_DIR$/cart-service/pom.xml" />
         <option value="$PROJECT_DIR$/chat-service/pom.xml" />
+        <option value="$PROJECT_DIR$/common/common-core/pom.xml" />
+        <option value="$PROJECT_DIR$/common/common-kafka/pom.xml" />
+        <option value="$PROJECT_DIR$/common/common-security-jwt/pom.xml" />
+        <option value="$PROJECT_DIR$/common/common-web/pom.xml" />
+        <option value="$PROJECT_DIR$/common/common-feign/pom.xml" />
+        <option value="$PROJECT_DIR$/pom.xml" />
       </list>
     </option>
   </component>

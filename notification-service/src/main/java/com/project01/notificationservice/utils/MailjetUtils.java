@@ -16,11 +16,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class MailjetUtils {
 
-    @Value("${mailjet.api-key}")
+    @Value("${mailjet.api-key:61a7d3173515fb84be6d8a2c6ce433fe}")
     @NonFinal
     private String apiKey;
 
-    @Value("${mailjet.api-secretKey}")
+    @Value("${mailjet.api-secretKey:470eeb057bc489f636bbe96ee0b952aa}")
     @NonFinal
     private String apiSecretKey;
 

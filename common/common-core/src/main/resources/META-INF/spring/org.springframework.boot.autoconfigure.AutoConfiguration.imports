@@ -1,0 +1,3 @@
+com.project01.common.core.exception.ExceptionHandlingAutoConfiguration
+com.project01.common.core.config.RedisConfig
+com.project01.common.core.config.JpaAuditingAutoConfiguration

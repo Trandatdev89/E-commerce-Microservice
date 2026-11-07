@@ -12,9 +12,8 @@ import java.text.ParseException;
 public interface AuthService {
     void createAccount(RegisterDTO registerDTO);
     AuthenticationResponse login(AuthenticationRequest authenticationRequest);
-    AuthenticationResponse logout(IntrospectTokenRequest introspectTokenRequest);
+    void logout(IntrospectTokenRequest introspectTokenRequest);
     IntrospectTokenResponse introspect(IntrospectTokenRequest introspectTokenRequest);
     AuthenticationResponse refreshToken(IntrospectTokenRequest introspectTokenRequest) throws ParseException, JOSEException;
     void verifyAccount(String userId,String code);
-//    void forgotPassword(String email);
 }

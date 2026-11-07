@@ -10,5 +10,5 @@ public interface OrderService {
     List<OrderResponse> getAllOrders();
     List<OrderResponse> getOrderByCustomerId(String id);
     OrderResponse getOrderByReferenceOrder(String referenceOrder);
-    void deleteOrderByReference(List<String> reference);
+    void cancelOrders(List<String> orderCodes, String reasonCode);
 }

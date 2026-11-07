@@ -1,6 +1,6 @@
 package com.project01.paymentservice.controller;
 
-import com.project01.paymentservice.dto.ApiResponse;
+import com.project01.common.core.dto.response.ResponseData;
 import com.project01.paymentservice.dto.PaymentDTO;
 import com.project01.paymentservice.dto.PaymentDTOResponse;
 import com.project01.paymentservice.service.PaymentService;
@@ -17,7 +17,7 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping(value = "/create")
-    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @PreAuthorize("hasAnyRole('CLIENT','ADMIN')")
     @Operation(summary = "API tạo mới 1 thanh toán",
             description = "Tạo mới 1 thanh toán sau khi đặt hàng")
     public Long createPayment(@RequestBody PaymentDTO payment) {
@@ -25,15 +25,11 @@ public class PaymentController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @PreAuthorize("hasAnyRole('CLIENT','ADMIN')")
     @Operation(summary = "API lấy đơn thanh toán thông qua mã đơn hàng",
-            description = "API lấy đơn thanh toán thông qua mã đơn hàng (Lưu ý orderId là mã đơn ,còn referenceOrder là mã tham chiếu đơn)")
-    public ApiResponse<PaymentDTOResponse> getPaymentByOrderId(@RequestParam Long orderId) {
-        return ApiResponse.<PaymentDTOResponse>builder()
-                .code(200)
-                .message("Success")
-                .data(paymentService.getPaymentByOrderId(orderId))
-                .build();
+            description = "Trả về lần thanh toán gần nhất của đơn theo order_code, vd ORD-20261101-8F3K2A")
+    public ResponseData<PaymentDTOResponse> getPaymentByOrderCode(@RequestParam String orderCode) {
+        return new ResponseData<PaymentDTOResponse>().success(paymentService.getPaymentByOrderCode(orderCode));
     }
 
 

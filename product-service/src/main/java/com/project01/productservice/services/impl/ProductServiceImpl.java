@@ -1,25 +1,26 @@
 package com.project01.productservice.services.impl;
 
+import com.project01.common.core.exception.BusinessException;
+import com.project01.productservice.brand.BrandRepository;
+import com.project01.productservice.category.CategoryRepository;
 import com.project01.productservice.convertor.ProductConvertor;
 import com.project01.productservice.dto.request.ProductRequest;
 import com.project01.productservice.dto.request.PurchaseRequest;
+import com.project01.productservice.dto.request.SkuRequest;
 import com.project01.productservice.dto.response.ProductResponse;
 import com.project01.productservice.dto.response.PurchaseResponse;
-import com.project01.productservice.entity.Product;
-import com.project01.productservice.exception.custom.AppException;
-import com.project01.productservice.exception.custom.ErrorCode;
-import com.project01.productservice.repository.ProductRepository;
-import com.project01.productservice.repository.SearchRepository;
-import com.project01.productservice.repository.criteria.BuildQuerySpecification;
+import com.project01.productservice.dto.response.SkuResponse;
+import com.project01.productservice.entity.*;
+import com.project01.productservice.exception.ErrorCode;
+import com.project01.productservice.repository.*;
 import com.project01.productservice.repository.criteria.SearchCriteria;
 import com.project01.productservice.repository.criteria.SpecSearchCriteria;
 import com.project01.productservice.services.ProductService;
+import com.project01.productservice.utils.SlugUtil;
+import com.project01.productservice.utils.UploadFileUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,9 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -39,186 +40,241 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ProductServiceImpl implements ProductService {
 
+    private static final Pattern SEARCH_PATTERN = Pattern.compile("(\\w+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");
+
     private final ProductRepository productRepository;
+    private final SkuRepository skuRepository;
+    private final SkuAttributeValueRepository skuAttributeValueRepository;
+    private final AttributeValueRepository attributeValueRepository;
+    private final ProductImageRepository productImageRepository;
+    private final CategoryRepository categoryRepository;
+    private final BrandRepository brandRepository;
     private final ProductConvertor productConvertor;
-    private final SearchRepository searchRepository;
+    private final UploadFileUtil uploadFileUtil;
 
     @PersistenceContext
     private EntityManager entityManager;
 
     @Override
     public List<ProductResponse> getAllProducts() {
-        List<Product> products = productRepository.findAll();
-        List<ProductResponse> productResponses = new ArrayList<>();
-        for (Product product : products) {
-            productResponses.add(productConvertor.toProductResponse(product));
-        }
-        return productResponses;
+        return productConvertor.toProductResponses(productRepository.findAllByStatus(ProductStatus.ACTIVE));
     }
 
     @Override
-    public ProductResponse createProduct(ProductRequest request,MultipartFile image) throws IOException {
-        Product product = productConvertor.toProductEntity(request,image);
-        productRepository.save(product);
+    @Transactional
+    public ProductResponse createProduct(ProductRequest request, MultipartFile image) throws IOException {
+        validateCategoryAndBrand(request);
+        Product product = productRepository.save(Product.builder()
+                .categoryId(request.getCategoryId())
+                .brandId(request.getBrandId())
+                .name(request.getName())
+                .slug(SlugUtil.toUniqueSlug(request.getName(), productRepository::existsBySlug))
+                .description(request.getDescription())
+                .status(request.getStatus() == null ? ProductStatus.DRAFT : request.getStatus())
+                .build());
+        saveImage(product.getId(), image);
         return productConvertor.toProductResponse(product);
     }
 
     @Override
     public ProductResponse getProductById(Long id) {
-        Product product = productRepository.findById(id).orElseThrow(() -> new RuntimeException("Product not found"));
+        return productConvertor.toProductResponse(findProduct(id));
+    }
+
+    @Override
+    @Transactional
+    public ProductResponse updateProduct(Long id, ProductRequest request, MultipartFile image) throws IOException {
+        Product product = findProduct(id);
+        validateCategoryAndBrand(request);
+        if (!product.getName().equals(request.getName())) {
+            product.setSlug(SlugUtil.toUniqueSlug(request.getName(), productRepository::existsBySlug));
+        }
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setCategoryId(request.getCategoryId());
+        product.setBrandId(request.getBrandId());
+        if (request.getStatus() != null) {
+            product.setStatus(request.getStatus());
+        }
+        productRepository.save(product);
+        saveImage(product.getId(), image);
         return productConvertor.toProductResponse(product);
     }
 
+    /** Không xóa cứng vì đơn hàng cũ còn tham chiếu SKU, chỉ chuyển sang HIDDEN. */
     @Override
-    public ProductResponse updateProduct(Long id, ProductRequest productRequest,MultipartFile image) throws IOException {
-        Product product = productRepository.findById(id).orElseThrow(() -> new RuntimeException("Product not found"));
-        Product updateproduct = productConvertor.toProductEntity(productRequest,image);
-        updateproduct.setId(product.getId());
-        return productConvertor.toProductResponse(productRepository.save(updateproduct));
-    }
-
-    @Override
-    public void deleteProduct(List<Long> id) {
-        List<Product> product = productRepository.findAllById(id);
-        for(Product p : product){
-            p.getShips().clear();
-            productRepository.save(p);
-        }
-        productRepository.deleteByIdIn(id);
+    @Transactional
+    public void deleteProduct(List<Long> ids) {
+        List<Product> products = productRepository.findAllById(ids);
+        products.forEach(product -> product.setStatus(ProductStatus.HIDDEN));
+        productRepository.saveAll(products);
     }
 
     @Override
     public List<ProductResponse> getProductByCategory(Long categoryId) {
-        List<ProductResponse> productResponses = new ArrayList<>();
-        List<Product> products = productRepository.findByCategory_Id(categoryId);
-        for (Product product : products) {
-            productResponses.add(productConvertor.toProductResponse(product));
-        }
-        return productResponses;
+        return productConvertor.toProductResponses(
+                productRepository.findAllByCategoryIdAndStatus(categoryId, ProductStatus.ACTIVE));
     }
 
     @Override
-    @Transactional(rollbackFor = {AppException.class})
+    @Transactional
+    public SkuResponse createSku(Long productId, SkuRequest request) {
+        findProduct(productId);
+        if (skuRepository.existsBySkuCode(request.getSkuCode())) {
+            throw new BusinessException(ErrorCode.SKU_CODE_EXISTED);
+        }
+        Sku sku = Sku.builder().productId(productId).build();
+        applySkuRequest(sku, request);
+        sku = skuRepository.save(sku);
+        saveAttributeValues(sku.getId(), request.getAttributeValueIds());
+        return productConvertor.toSkuResponses(List.of(sku)).get(0);
+    }
+
+    @Override
+    @Transactional
+    public SkuResponse updateSku(Long skuId, SkuRequest request) {
+        Sku sku = skuRepository.findById(skuId).orElseThrow(() -> new BusinessException(ErrorCode.SKU_NOTFOUND));
+        if (skuRepository.existsBySkuCodeAndIdNot(request.getSkuCode(), skuId)) {
+            throw new BusinessException(ErrorCode.SKU_CODE_EXISTED);
+        }
+        applySkuRequest(sku, request);
+        skuRepository.save(sku);
+        skuAttributeValueRepository.deleteAllBySkuId(skuId);
+        saveAttributeValues(skuId, request.getAttributeValueIds());
+        return productConvertor.toSkuResponses(List.of(sku)).get(0);
+    }
+
+    @Override
+    public List<SkuResponse> getSkusByIds(List<Long> skuIds) {
+        return productConvertor.toSkuResponses(skuRepository.findAllById(skuIds));
+    }
+
+    /**
+     * Chốt giá cho order-service: kiểm tra SKU còn bán và trả giá hiện tại lấy từ DB.
+     * Chưa trừ tồn kho - phần giữ hàng sẽ nằm ở inventory-service (inv_reservation).
+     */
+    @Override
     public List<PurchaseResponse> purchaseProduct(List<PurchaseRequest> request) {
-        //Lay ra so luong san pham co trung voi truyen vao voi db:
-         List<PurchaseResponse> purchaseResponses = new ArrayList<>();
-         List<Product> storedProduct = productRepository.findAllByIdInOrderById(request.stream().map(PurchaseRequest::getProductId).collect(Collectors.toList()));
-         if(storedProduct.size() != request.size()){
-             throw new AppException(ErrorCode.PRODUCT_NOT_MATCH);
-         }
-        List<PurchaseRequest> sortedPurchase = request.stream().sorted(Comparator.comparing(PurchaseRequest::getProductId)).toList();
-         for(int i=0; i<storedProduct.size(); i++){
-             var StoredProduct = storedProduct.get(i);
-             var PurchaseProduct = sortedPurchase.get(i);
-             if(StoredProduct.getAvailableQuantity() < PurchaseProduct.getQuantity()){
-                 throw new AppException(ErrorCode.INVENTORY_NOT_ENOUGH);
-             }
-             var newAvailableQuantity = StoredProduct.getAvailableQuantity() - PurchaseProduct.getQuantity();
-             StoredProduct.setAvailableQuantity(newAvailableQuantity);
-             productRepository.save(StoredProduct);
-             purchaseResponses.add(productConvertor.toPurchaseResponse(newAvailableQuantity,StoredProduct));
-         }
-         return purchaseResponses;
+        Map<Long, Integer> quantityBySku = request.stream()
+                .collect(Collectors.toMap(PurchaseRequest::getSkuId, PurchaseRequest::getQuantity, Integer::sum, LinkedHashMap::new));
+
+        Map<Long, Sku> skuById = skuRepository.findAllById(quantityBySku.keySet()).stream()
+                .collect(Collectors.toMap(Sku::getId, Function.identity()));
+        if (skuById.size() != quantityBySku.size()) {
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_MATCH);
+        }
+        List<Long> productIds = skuById.values().stream().map(Sku::getProductId).distinct().toList();
+        Map<Long, Product> productById = productRepository.findAllById(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
+        Map<Long, List<ProductImage>> imagesByProduct = productConvertor.imagesByProduct(productIds);
+
+        List<PurchaseResponse> responses = new ArrayList<>();
+        quantityBySku.forEach((skuId, quantity) -> {
+            Sku sku = skuById.get(skuId);
+            Product product = productById.get(sku.getProductId());
+            if (sku.getStatus() != SkuStatus.ACTIVE || product.getStatus() != ProductStatus.ACTIVE) {
+                throw new BusinessException(ErrorCode.PRODUCT_NOT_AVAILABLE);
+            }
+            String imageUrl = productConvertor.imageOfSku(sku, imagesByProduct.getOrDefault(product.getId(), List.of()));
+            responses.add(productConvertor.toPurchaseResponse(sku, product, imageUrl, quantity));
+        });
+        return responses;
     }
 
     @Override
     public List<ProductResponse> searchSpecificationProduct(String[] search) {
-        List<Product> products;
-        log.info("Total Element: {}",getTotalElement(search));
-        if(search!=null){
-            CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-            CriteriaQuery<Product> query = cb.createQuery(Product.class);
-            Root<Product> root = query.from(Product.class);
+        if (search == null) {
+            return getAllProducts();
+        }
+        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Product> query = cb.createQuery(Product.class);
+        Root<Product> root = query.from(Product.class);
 
-            Predicate userPredicate = cb.conjunction();
-
-            List<SearchCriteria> searchCriterias = new ArrayList<>();
-            Pattern pattern = Pattern.compile("(\\w+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");
-            for(String s : search){
-                Matcher matcher = pattern.matcher(s);
-                if(matcher.find()){
-                    searchCriterias.add(new SearchCriteria(matcher.group(1),matcher.group(2),matcher.group(3),matcher.group(4),matcher.group(5)));
-                }
+        Predicate predicate = cb.equal(root.get("status"), ProductStatus.ACTIVE);
+        for (String s : search) {
+            Matcher matcher = SEARCH_PATTERN.matcher(s);
+            if (!matcher.find()) {
+                continue;
             }
-
-            for(int i = 0 ;i<searchCriterias.size(); i++){
-                if(searchCriterias.get(i).getKey().equals("category_id")){
-                    Predicate catePredicate = searchRepository.joinCateAndProduct(searchCriterias.get(i),root,cb);
-                    userPredicate = cb.and(catePredicate,userPredicate);
-                }
-                else if(searchCriterias.get(i).getKey().equals("brand_id")){
-                    Predicate brandPredicate = searchRepository.joinBrandAndProduct(searchCriterias.get(i),root,cb);
-                    userPredicate = cb.and(brandPredicate,userPredicate);
-                }
-                else if(searchCriterias.get(i).getKey().equals("ship_id")){
-                    Predicate shipPredicate = searchRepository.joinShipAndProduct(searchCriterias.get(i),root,cb);
-                    userPredicate = cb.and(shipPredicate,userPredicate);
-                }
-                else{
-                    SpecSearchCriteria specSearchCriteria = new SpecSearchCriteria(searchCriterias.get(i));
-                    Predicate cateNormal = specSearchCriteria.toPredicate(root,query,cb);
-                    userPredicate = cb.and(cateNormal,userPredicate);
-                }
-            }
-            query.where(userPredicate);
-            products = entityManager.createQuery(query).getResultList();
+            SearchCriteria criteria = new SearchCriteria(matcher.group(1), matcher.group(2), matcher.group(3), matcher.group(4), matcher.group(5));
+            Predicate condition = switch (criteria.getKey()) {
+                case "category_id" -> cb.equal(root.get("categoryId"), Long.valueOf(criteria.getValue().toString()));
+                case "brand_id" -> cb.equal(root.get("brandId"), Long.valueOf(criteria.getValue().toString()));
+                case "price" -> skuPricePredicate(criteria, root, query, cb);
+                default -> new SpecSearchCriteria(criteria).toPredicate(root, query, cb);
+            };
+            predicate = cb.and(predicate, condition);
         }
-        else{
-            products = productRepository.findAll();
-        }
-        List<ProductResponse> productResponses = new ArrayList<>();
-        for (Product product : products) {
-            productResponses.add(productConvertor.toProductResponse(product));
-        }
-        return productResponses;
+        query.where(predicate);
+        List<Product> products = entityManager.createQuery(query).getResultList();
+        log.info("Total Element: {}", products.size());
+        return productConvertor.toProductResponses(products);
     }
 
+    /** Giá nằm ở prd_sku nên lọc bằng EXISTS (sku đang bán của sản phẩm có giá thỏa điều kiện). */
+    private Predicate skuPricePredicate(SearchCriteria criteria, Root<Product> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+        Subquery<Long> subquery = query.subquery(Long.class);
+        Root<Sku> sku = subquery.from(Sku.class);
+        BigDecimal value = new BigDecimal(criteria.getValue().toString());
+        Expression<BigDecimal> price = sku.get("price");
+        Predicate priceCondition = switch (criteria.getOperator()) {
+            case GREATER_THAN -> cb.greaterThanOrEqualTo(price, value);
+            case LESS_THAN -> cb.lessThanOrEqualTo(price, value);
+            case NEGATION -> cb.notEqual(price, value);
+            default -> cb.equal(price, value);
+        };
+        subquery.select(sku.get("id")).where(
+                cb.equal(sku.get("productId"), root.get("id")),
+                cb.equal(sku.get("status"), SkuStatus.ACTIVE),
+                priceCondition);
+        return cb.exists(subquery);
+    }
 
-    public Long getTotalElement(String[] search) {
-        Long products;
-        if(search!=null){
-            CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-            CriteriaQuery<Long> query = cb.createQuery(Long.class);
-            Root<Product> root = query.from(Product.class);
+    private Product findProduct(Long id) {
+        return productRepository.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOTFOUND));
+    }
 
-            Predicate userPredicate = cb.conjunction();
-
-            List<SearchCriteria> searchCriterias = new ArrayList<>();
-            Pattern pattern = Pattern.compile("(\\w+?)([<:>~!])(.*)(\\p{Punct}?)(\\p{Punct}?)");
-            for(String s : search){
-                Matcher matcher = pattern.matcher(s);
-                if(matcher.find()){
-                    searchCriterias.add(new SearchCriteria(matcher.group(1),matcher.group(2),matcher.group(3),matcher.group(4),matcher.group(5)));
-                }
-            }
-
-            for(int i = 0 ;i<searchCriterias.size(); i++){
-                if(searchCriterias.get(i).getKey().equals("category_id")){
-                    Predicate catePredicate = searchRepository.joinCateAndProduct(searchCriterias.get(i),root,cb);
-                    userPredicate = cb.and(catePredicate,userPredicate);
-                }
-                else if(searchCriterias.get(i).getKey().equals("brand_id")){
-                    Predicate brandPredicate = searchRepository.joinBrandAndProduct(searchCriterias.get(i),root,cb);
-                    userPredicate = cb.and(brandPredicate,userPredicate);
-                }
-                else if(searchCriterias.get(i).getKey().equals("ship_id")){
-                    Predicate shipPredicate = searchRepository.joinShipAndProduct(searchCriterias.get(i),root,cb);
-                    userPredicate = cb.and(shipPredicate,userPredicate);
-                }
-                else{
-                    SpecSearchCriteria specSearchCriteria = new SpecSearchCriteria(searchCriterias.get(i));
-                    Predicate cateNormal = specSearchCriteria.toPredicate(root,query,cb);
-                    userPredicate = cb.and(cateNormal,userPredicate);
-                }
-            }
-            query.select(cb.count(root));
-            query.where(userPredicate);
-//            query.groupBy(root.get("id"));
-            products = entityManager.createQuery(query).getSingleResult();
+    private void validateCategoryAndBrand(ProductRequest request) {
+        if (!categoryRepository.existsById(request.getCategoryId())) {
+            throw new BusinessException(ErrorCode.CATEGORY_NOTFOUND);
         }
-        else{
-            products = Long.valueOf(productRepository.findAll().size());
+        if (request.getBrandId() != null && !brandRepository.existsById(request.getBrandId())) {
+            throw new BusinessException(ErrorCode.BRAND_NOTFOUND);
         }
-        return products;
+    }
+
+    private void saveImage(Long productId, MultipartFile image) throws IOException {
+        if (image == null || image.isEmpty()) {
+            return;
+        }
+        productImageRepository.save(ProductImage.builder()
+                .productId(productId)
+                .url(uploadFileUtil.getImageToCloudinary(image))
+                .sortOrder(productImageRepository.countByProductId(productId))
+                .build());
+    }
+
+    private void applySkuRequest(Sku sku, SkuRequest request) {
+        sku.setSkuCode(request.getSkuCode());
+        sku.setName(request.getName());
+        sku.setPrice(request.getPrice());
+        sku.setCompareAtPrice(request.getCompareAtPrice());
+        sku.setWeightGram(request.getWeightGram());
+        if (request.getStatus() != null) {
+            sku.setStatus(request.getStatus());
+        }
+    }
+
+    private void saveAttributeValues(Long skuId, List<Long> attributeValueIds) {
+        if (attributeValueIds == null || attributeValueIds.isEmpty()) {
+            return;
+        }
+        Set<Long> distinctIds = new LinkedHashSet<>(attributeValueIds);
+        if (attributeValueRepository.findAllById(distinctIds).size() != distinctIds.size()) {
+            throw new BusinessException(ErrorCode.ATTRIBUTE_VALUE_NOTFOUND);
+        }
+        skuAttributeValueRepository.saveAll(distinctIds.stream()
+                .map(valueId -> SkuAttributeValue.builder().skuId(skuId).attributeValueId(valueId).build())
+                .toList());
     }
 }

@@ -14,8 +14,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class PurchaseRequest {
-    @NotNull(message = "Product is mandatory")
-    private Long productId;
-    @Positive(message = "Quantity is mandatory")
-    private Long quantity;
+    @NotNull(message = "SKU is mandatory")
+    private Long skuId;
+    @NotNull(message = "Quantity is mandatory")
+    @Positive(message = "Quantity must be positive")
+    private Integer quantity;
 }
