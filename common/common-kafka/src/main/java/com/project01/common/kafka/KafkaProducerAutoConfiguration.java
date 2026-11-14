@@ -36,6 +36,9 @@ public class KafkaProducerAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public KafkaTemplate<String, Object> kafkaTemplate(ProducerFactory<String, Object> producerFactory) {
-        return new KafkaTemplate<>(producerFactory);
+        KafkaTemplate<String, Object> kafkaTemplate = new KafkaTemplate<>(producerFactory);
+        // Gắn traceId vào header message để trace nối tiếp sang consumer
+        kafkaTemplate.setObservationEnabled(true);
+        return kafkaTemplate;
     }
 }

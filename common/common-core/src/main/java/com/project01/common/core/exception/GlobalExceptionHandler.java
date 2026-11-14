@@ -7,7 +7,7 @@ import com.project01.common.core.enums.CommonErrorCode;
 import io.micrometer.common.util.StringUtils;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.ThreadContext;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -41,14 +41,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private MessageSource messageSource;
 
     public ResponseEntity<Object> handleAllExceptionImpl(Exception ex, HttpHeaders headers, HttpStatus status, WebRequest request) {
-        ThreadContext.put("logType", "response");
+        MDC.put("logType", "response");
 
         if (ex instanceof BusinessException e) {
-            ThreadContext.put("status", String.valueOf(e.getHttpStatus().value()));
-            ThreadContext.put("responseCode", String.valueOf(e.getCode()));
+            MDC.put("status", String.valueOf(e.getHttpStatus().value()));
+            MDC.put("responseCode", String.valueOf(e.getCode()));
 
             if (StringUtils.isNotBlank(e.getMessage())) {
-                ThreadContext.put("responseMsg", e.getMessage());
+                MDC.put("responseMsg", e.getMessage());
             }
 
             return new ResponseEntity<>(new ResponseData<>().error(e.getHttpStatus().value(), e.getMessage(), e.getCode(),
@@ -62,8 +62,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         } else if (ex instanceof DataIntegrityViolationException e) {
             return handleDataIntegrityViolation(e);
         } else {
-            ThreadContext.put("status", String.valueOf(status.value()));
-            ThreadContext.put("responseCode", CommonErrorCode.INTERNAL_SERVER_ERROR.getCode());
+            MDC.put("status", String.valueOf(status.value()));
+            MDC.put("responseCode", CommonErrorCode.INTERNAL_SERVER_ERROR.getCode());
             this.logger.error(ex.getMessage(), ex);
             return new ResponseEntity((new ResponseData()).error(status.value(), "Có lỗi trong quá trình xử lý! Vui lòng liên hệ IT để được hỗ trợ.", CommonErrorCode.INTERNAL_SERVER_ERROR.getCode(), "Có lỗi trong quá trình xử lý! Vui lòng liên hệ IT để được hỗ trợ."), status);
         }
@@ -104,9 +104,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             }
         }
 
-        ThreadContext.put("status", String.valueOf(HttpStatus.BAD_REQUEST.value()));
-        ThreadContext.put("responseCode", CommonErrorCode.INTERNAL_SERVER_ERROR.getCode());
-        ThreadContext.put("responseMsg", ex.getMessage());
+        MDC.put("status", String.valueOf(HttpStatus.BAD_REQUEST.value()));
+        MDC.put("responseCode", CommonErrorCode.INTERNAL_SERVER_ERROR.getCode());
+        MDC.put("responseMsg", ex.getMessage());
         this.logger.warn(sb.toString(), ex);
         return new ResponseEntity((new ResponseData()).error(
                 HttpStatus.BAD_REQUEST.value(),
@@ -126,18 +126,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         }
 
         String errorMess = "Maximum upload file is : " + maxSize;
-        ThreadContext.put("status", String.valueOf(HttpStatus.UNPROCESSABLE_ENTITY.value()));
-        ThreadContext.put("responseCode", CommonErrorCode.INTERNAL_SERVER_ERROR.getCode());
-        ThreadContext.put("responseMsg", errorMess);
+        MDC.put("status", String.valueOf(HttpStatus.UNPROCESSABLE_ENTITY.value()));
+        MDC.put("responseCode", CommonErrorCode.INTERNAL_SERVER_ERROR.getCode());
+        MDC.put("responseMsg", errorMess);
         this.logger.warn(errorMess, ex);
         return new ResponseEntity((new ResponseData()).error(HttpStatus.UNPROCESSABLE_ENTITY.value(), errorMess, CommonErrorCode.INTERNAL_SERVER_ERROR.getCode(), errorMess), HttpStatus.UNPROCESSABLE_ENTITY);
     }
 
     private ResponseEntity<Object> handleAccessDeniedException(AccessDeniedException e) {
         CommonErrorCode errorCode = CommonErrorCode.FORBIDDEN;
-        ThreadContext.put("status", String.valueOf(errorCode.getHttpStatus().value()));
-        ThreadContext.put("responseCode", errorCode.getCode());
-        ThreadContext.put("responseMsg", errorCode.getMessage());
+        MDC.put("status", String.valueOf(errorCode.getHttpStatus().value()));
+        MDC.put("responseCode", errorCode.getCode());
+        MDC.put("responseMsg", errorCode.getMessage());
         this.logger.warn(e.getMessage());
         return new ResponseEntity<>(new ResponseData<>().error(errorCode.getHttpStatus().value(), errorCode.getMessage(),
                 errorCode.getCode(), errorCode.getMessage()), errorCode.getHttpStatus());
@@ -145,9 +145,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private ResponseEntity<Object> handleDataIntegrityViolation(DataIntegrityViolationException e) {
         CommonErrorCode errorCode = CommonErrorCode.DATA_INTEGRITY_VIOLATION;
-        ThreadContext.put("status", String.valueOf(errorCode.getHttpStatus().value()));
-        ThreadContext.put("responseCode", errorCode.getCode());
-        ThreadContext.put("responseMsg", errorCode.getMessage());
+        MDC.put("status", String.valueOf(errorCode.getHttpStatus().value()));
+        MDC.put("responseCode", errorCode.getCode());
+        MDC.put("responseMsg", errorCode.getMessage());
         this.logger.error(e.getMostSpecificCause().getMessage(), e);
         return new ResponseEntity<>(new ResponseData<>().error(errorCode.getHttpStatus().value(), errorCode.getMessage(),
                 errorCode.getCode(), errorCode.getMessage()), errorCode.getHttpStatus());

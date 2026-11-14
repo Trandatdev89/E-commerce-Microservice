@@ -1,14 +1,14 @@
 services:
   zipkin:
     container_name: zipkin
-    image: openzipkin/zipkin
+    image: openzipkin/zipkin:3.6.1
     ports:
       - "9411:9411"
     networks:
       - microservices-net
 
   mysql:
-    image: mysql
+    image: mysql:8.4
     container_name: mysql_container
     environment:
       MYSQL_ROOT_PASSWORD: root  # Thêm mật khẩu cho root
@@ -23,7 +23,7 @@ services:
       - mysql_data:/var/lib/mysql
 
   mongodb:
-    image: mongo
+    image: mongo:8.2.12
     container_name: mongo_db
     ports:
       - 27017:27017
@@ -32,37 +32,36 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=alibou
       - MONGO_INITDB_ROOT_PASSWORD=alibou
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    container_name: zookeeper
-    environment:
-      ZOOKEEPER_SERVER_ID: 1
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "22181:2181"
-    networks:
-      - microservices-net
-
+  # Kafka chạy chế độ KRaft (từ Kafka 4.0 / Confluent 8.x đã bỏ ZooKeeper).
+  # 1 node vừa làm broker vừa làm controller, đủ cho môi trường dev.
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:8.4.0
     container_name: ms_kafka
     ports:
       - "9092:9092"
-    depends_on:
-      - zookeeper
     environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      # 9092: client (các service) kết nối; 9093: nội bộ cho controller (KRaft)
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      # Service chạy trên máy host nên quảng bá localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      # Định danh cluster KRaft (chuỗi base64 22 ký tự), giữ cố định để dữ liệu trong volume dùng lại được
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+    volumes:
+      - kafka-data:/var/lib/kafka/data
     networks:
       - microservices-net
 
   redis:
-    image: redis:latest
+    image: redis:8.2.0
     container_name: redis-container
     ports:
       - "6379:6379"
@@ -79,49 +78,8 @@ networks:
     driver: bridge
 
 volumes:
+  kafka-data:
   redis-data:
   mongo:
   mysql_data:
 
-#  config-server:
-#    build:
-#      context: ./config-server
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8888:8888"
-#    networks:
-#      - microservices-ecommerce
-#    healthcheck:
-#      test: [ "CMD", "curl", "-f", "http://localhost:8888/actuator/health" ]
-#      interval: 10s
-#      retries: 5
-#
-#  discovery-server:
-#    build:
-#      context: ./discovery-server
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8761:8761"
-#    depends_on:
-#      config-server:
-#        condition: service_healthy
-#    healthcheck:
-#      test: [ "CMD", "curl", "-f", "http://localhost:8761/actuator/health" ]
-#      interval: 10s
-#      retries: 5
-#    networks:
-#      - microservices-ecommerce
-#
-#  api-gateway:
-#    build:
-#      context: ./api-gateway
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8222:8222"
-#    depends_on:
-#      config-server:
-#        condition: service_healthy
-#      discovery-server:
-#        condition: service_healthy
-#    networks:
-#      - microservices-ecommerce

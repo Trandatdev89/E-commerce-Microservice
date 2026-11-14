@@ -11,14 +11,23 @@ spring:
     config:
       override-system-properties: false
 
-#management:
-#  endpoints:
-#    web:
-#      exposure:
-#        include: health,info
-#  endpoint:
-#    health:
-#      show-details: always
-#  tracing:
-#    sampling:
-#      probability: 1.0
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+  tracing:
+    sampling:
+      # 1.0 = ghi 100% request, phù hợp khi dev. Production thường để 0.1
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+
+logging:
+  pattern:
+    # Mỗi dòng log có [tên service,traceId,spanId] để tra cứu chéo với Zipkin
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"

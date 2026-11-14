@@ -39,6 +39,8 @@ public class KafkaConsumerConfig {
         factory.setConsumerFactory(consumerFactory());
 //        factory.setCommonErrorHandler(errorHandler());
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
+        // Đọc traceId từ header message, log của consumer dùng chung trace với service gửi
+        factory.getContainerProperties().setObservationEnabled(true);
         return factory;
     }
 }

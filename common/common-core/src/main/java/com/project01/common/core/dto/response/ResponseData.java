@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.project01.common.core.constants.SystemConstants;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.logging.log4j.ThreadContext;
+import org.slf4j.MDC;
 import org.springframework.lang.NonNull;
 
 import java.io.Serializable;
@@ -33,10 +33,10 @@ public class ResponseData<T> implements Serializable {
     private ResponseData<T> getResponseDataSuccess() {
         this.status = 200;
         this.error = null;
-        this.path = ThreadContext.get(SystemConstants.PATH);
+        this.path = MDC.get(SystemConstants.PATH);
         this.processDate = LocalDateTime.now();
-        this.transactionId = ThreadContext.get(SystemConstants.TRANSACTION_ID);
-        this.clientMessageId = ThreadContext.get(SystemConstants.CLIENT_MESSAGE_ID);
+        this.transactionId = MDC.get(SystemConstants.TRACE_ID);
+        this.clientMessageId = MDC.get(SystemConstants.CLIENT_MESSAGE_ID);
         return this;
     }
 
@@ -44,10 +44,10 @@ public class ResponseData<T> implements Serializable {
     private ResponseData<T> getResponseDataError(int status, String error, String soaErrorCode, String soaErrorDesc) {
         this.status = status;
         this.error = error;
-        this.path = ThreadContext.get(SystemConstants.PATH);
+        this.path = MDC.get(SystemConstants.PATH);
         this.processDate = LocalDateTime.now();
-        this.transactionId = ThreadContext.get(SystemConstants.TRANSACTION_ID);
-        this.clientMessageId = ThreadContext.get(SystemConstants.CLIENT_MESSAGE_ID);
+        this.transactionId = MDC.get(SystemConstants.TRACE_ID);
+        this.clientMessageId = MDC.get(SystemConstants.CLIENT_MESSAGE_ID);
         this.soaErrorCode = soaErrorCode;
         this.soaErrorDesc = soaErrorDesc;
         return this;
