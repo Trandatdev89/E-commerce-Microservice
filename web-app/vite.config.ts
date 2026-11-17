@@ -15,4 +15,14 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  server: {
+    port: 5173,
+    // Trình duyệt gọi /api/... cùng origin với FE, Vite chuyển tiếp sang gateway -> không bị lỗi CORS khi dev
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8222',
+        changeOrigin: true,
+      },
+    },
+  },
 })
