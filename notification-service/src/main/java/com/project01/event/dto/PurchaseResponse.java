@@ -1,4 +1,4 @@
-package com.project01.notificationservice.kafka.order;
+package com.project01.event.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

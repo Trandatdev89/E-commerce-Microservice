@@ -9,6 +9,8 @@ import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.listener.ContainerProperties;
+import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.util.backoff.FixedBackOff;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 
 import java.util.HashMap;
@@ -26,9 +28,11 @@ public class KafkaConsumerConfig {
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "unique-group-" + System.currentTimeMillis());
+        // group-id cố định: Kafka nhớ offset của group, restart service sẽ đọc tiếp chỗ cũ, không mất / không đọc lại message
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "notification-service");
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        // Lần đầu group chưa có offset thì đọc từ đầu topic, không bỏ sót message gửi lúc service đang tắt
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         return new DefaultKafkaConsumerFactory<>(props);
     }
@@ -37,8 +41,12 @@ public class KafkaConsumerConfig {
     public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
-//        factory.setCommonErrorHandler(errorHandler());
-        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
+        // Xử lý lỗi (vd Mailjet tạm lỗi): thử lại 3 lần, mỗi lần cách 3 giây, sau đó bỏ qua message và ghi log.
+        // Trạng thái FAILED vẫn còn trong ntf_notifications để tra soát
+        factory.setCommonErrorHandler(new DefaultErrorHandler(new FixedBackOff(3000L, 3L)));
+        // RECORD: xử lý xong từng message thì Spring tự commit offset. MANUAL cũ không có chỗ nào gọi acknowledge()
+        // nên offset không bao giờ được commit
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
         // Đọc traceId từ header message, log của consumer dùng chung trace với service gửi
         factory.getContainerProperties().setObservationEnabled(true);
         return factory;

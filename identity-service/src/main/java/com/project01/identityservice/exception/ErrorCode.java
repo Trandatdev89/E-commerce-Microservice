@@ -4,10 +4,6 @@ package com.project01.identityservice.exception;
 import com.project01.common.core.exception.BaseErrorCode;
 import org.springframework.http.HttpStatus;
 
-/**
- * Mã lỗi nghiệp vụ của service, dạng IDT_ER_xxx. Lỗi chung (400, 401, 403, 500...)
- * dùng CommonErrorCode trong common-core.
- */
 public enum ErrorCode implements BaseErrorCode {
     UNAUTHOUCATED("IDT_ER_001", "Tài khoản chưa được xác thực,Yêu cầu đăng nhập!", HttpStatus.UNAUTHORIZED),
     BAD_REQUEST("IDT_ER_002", "Dữ liệu chưa hợp lệ!", HttpStatus.BAD_REQUEST),
@@ -21,7 +17,17 @@ public enum ErrorCode implements BaseErrorCode {
     USER_LOCKED("IDT_ER_010", "Tài khoản đã bị khóa", HttpStatus.FORBIDDEN),
     ROLE_NOTFOUND("IDT_ER_011", "Chưa khởi tạo dữ liệu role, hãy chạy script seed", HttpStatus.INTERNAL_SERVER_ERROR),
     UNAUTHOUZATED("IDT_ER_012", "Bạn không có quyền truy cập vào tài nguyên này", HttpStatus.FORBIDDEN),
-    SEARCH_USERNAME("IDT_ER_013", "Field nay chi duoc tim kiem bang username", HttpStatus.BAD_REQUEST);
+    SEARCH_USERNAME("IDT_ER_013", "Field nay chi duoc tim kiem bang username", HttpStatus.BAD_REQUEST),
+    INVALID_CREDENTIALS("IDT_ER_014", "Tên đăng nhập hoặc mật khẩu không đúng", HttpStatus.UNAUTHORIZED),
+    OTP_INVALID("IDT_ER_015", "Mã xác thực không đúng", HttpStatus.BAD_REQUEST),
+    OTP_EXPIRED("IDT_ER_016", "Mã xác thực đã hết hạn, vui lòng yêu cầu gửi lại mã", HttpStatus.BAD_REQUEST),
+    OTP_TOO_MANY_ATTEMPTS("IDT_ER_017", "Nhập sai mã quá nhiều lần, vui lòng yêu cầu gửi lại mã", HttpStatus.TOO_MANY_REQUESTS),
+    ACCOUNT_ALREADY_VERIFIED("IDT_ER_018", "Tài khoản đã được xác thực trước đó", HttpStatus.BAD_REQUEST),
+    REGISTRATION_EXPIRED("IDT_ER_019", "Phiên đăng ký đã hết hạn, vui lòng đăng ký lại", HttpStatus.BAD_REQUEST),
+    REFRESH_TOKEN_INVALID("IDT_ER_020", "Refresh token không hợp lệ, vui lòng đăng nhập lại", HttpStatus.UNAUTHORIZED),
+    REFRESH_TOKEN_EXPIRED("IDT_ER_021", "Refresh token đã hết hạn, vui lòng đăng nhập lại", HttpStatus.UNAUTHORIZED),
+    OTP_RESEND_TOO_SOON("IDT_ER_022", "Vui lòng đợi 60 giây trước khi yêu cầu gửi lại mã", HttpStatus.TOO_MANY_REQUESTS),
+    SESSION_NOTFOUND("IDT_ER_023", "Không tìm thấy phiên đăng nhập", HttpStatus.NOT_FOUND);
 
     private final String code;
     private final String message;

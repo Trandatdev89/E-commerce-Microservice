@@ -1,21 +1,22 @@
 package com.project01.event.dto;
 
-import com.project01.notificationservice.kafka.payment.PaymentMethod;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
 
+/** Event payment-service gửi lên topic "payment-topic" khi tạo thanh toán. */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class PaymentConfirm{
-    private String orderReference;
-    private BigDecimal amount;
-    private PaymentMethod paymentMethod;
-    private String customerFirstname;
-    private String customerLastname;
-    private String customerEmail;
+public class PaymentConfirm {
+    String customerId;
+    String orderReference;
+    BigDecimal amount;
+    PaymentMethod paymentMethod;
+    String customerFirstname;
+    String customerLastname;
+    String customerEmail;
 }

@@ -10,7 +10,14 @@ import java.util.Optional;
 @Repository
 public interface AccountRepository extends JpaRepository<AccountEntity, String> {
     Optional<AccountEntity> findByUsername(String username);
+
+    Optional<AccountEntity> findByEmail(String email);
+
+    Optional<AccountEntity> findByUsernameOrEmail(String username, String email);
+
     boolean existsByUsername(String username);
+
     boolean existsByEmail(String email);
+
     List<AccountEntity> findAllByUsernameContaining(String username);
 }

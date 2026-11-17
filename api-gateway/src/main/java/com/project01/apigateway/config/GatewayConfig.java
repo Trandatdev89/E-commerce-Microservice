@@ -32,6 +32,7 @@ public class GatewayConfig implements GlobalFilter, Ordered {
 
     private final IdentityService identityService;
     private static final String UNAUTHENTICATED_MESSAGE = "Tài khoản chưa được xác thực, yêu cầu đăng nhập!";
+    private static final String FORBIDDEN_MESSAGE = "Bạn không có quyền truy cập vào tài nguyên này";
 
     private final ObjectMapper objectMapper;
 
@@ -40,17 +41,21 @@ public class GatewayConfig implements GlobalFilter, Ordered {
 
     @NonFinal
     private String[] publicEnpoint=
-            {"/identity/auth/.*","/product/public(/.*)?","/product/category/public(/.*)?","/aggregate/.*"};
+            {"/identity/auth/.*","/aggregate/.*"};
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         log.info("Authentication filter ...");
+        if (isInternalEndpoint(exchange.getRequest())) {
+            return Forbidden(exchange);
+        }
         var publicEnpoint = isPublicEnpoint(exchange.getRequest());
         if(publicEnpoint){
             return chain.filter(exchange);
         }
         List<String> authHeader =exchange.getRequest().getHeaders().get("Authorization");
         if(CollectionUtils.isEmpty(authHeader)) {
+            log.info("Tài khoản chưa được xác thực!");
             return Unauthenticated(exchange);
         }
         String token = authHeader.get(0).replace("Bearer ","").trim();
@@ -69,19 +74,33 @@ public class GatewayConfig implements GlobalFilter, Ordered {
     }
 
     public boolean isPublicEnpoint(ServerHttpRequest serverHttpRequest){
-        return Arrays.stream(publicEnpoint).anyMatch(item->serverHttpRequest.getURI().getPath().matches(apiPrefix+item));
+        return Arrays.stream(publicEnpoint).anyMatch(item->serverHttpRequest
+                .getURI()
+                .getPath()
+                .matches(apiPrefix+item));
+    }
+
+    public boolean isInternalEndpoint(ServerHttpRequest serverHttpRequest){
+        return serverHttpRequest.getURI().getPath().matches(apiPrefix + "/[^/]+/internal(/.*)?");
     }
 
     private Mono<Void> Unauthenticated(ServerWebExchange exchange){
+        return writeError(exchange, HttpStatus.UNAUTHORIZED, "GL_ER_401", UNAUTHENTICATED_MESSAGE);
+    }
+
+    private Mono<Void> Forbidden(ServerWebExchange exchange){
+        return writeError(exchange, HttpStatus.FORBIDDEN, "GL_ER_403", FORBIDDEN_MESSAGE);
+    }
+
+    private Mono<Void> writeError(ServerWebExchange exchange, HttpStatus status, String errorCode, String message){
         ServerHttpResponse response = exchange.getResponse();
-        // Cùng mã lỗi với CommonErrorCode.UNAUTHORIZED của common-core
         ResponseData<Object> responseData = ResponseData.builder()
-                .status(HttpStatus.UNAUTHORIZED.value())
-                .error(UNAUTHENTICATED_MESSAGE)
+                .status(status.value())
+                .error(message)
                 .path(exchange.getRequest().getURI().getPath())
                 .processDate(LocalDateTime.now())
-                .soaErrorCode("GL_ER_401")
-                .soaErrorDesc(UNAUTHENTICATED_MESSAGE)
+                .soaErrorCode(errorCode)
+                .soaErrorDesc(message)
                 .build();
         String body = null;
         try {
@@ -89,7 +108,7 @@ public class GatewayConfig implements GlobalFilter, Ordered {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        response.setStatusCode(status);
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
         return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8))));
     }

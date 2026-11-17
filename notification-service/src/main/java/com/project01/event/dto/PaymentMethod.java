@@ -1,4 +1,4 @@
-package com.project01.notificationservice.kafka.payment;
+package com.project01.event.dto;
 
 /** Trùng với pay_method.code */
 public enum PaymentMethod {

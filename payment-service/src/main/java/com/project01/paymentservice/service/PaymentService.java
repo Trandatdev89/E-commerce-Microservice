@@ -57,6 +57,7 @@ public class PaymentService {
                 .build());
 
         notificationProducer.sendNotification(PaymentConfirm.builder()
+                        .customerId(paymentDTO.getCustomerId())
                         .orderReference(paymentDTO.getOrderReference())
                         .paymentMethod(paymentDTO.getPaymentMethod())
                         .amount(paymentDTO.getAmount())

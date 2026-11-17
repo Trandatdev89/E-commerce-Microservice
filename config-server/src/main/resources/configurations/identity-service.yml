@@ -18,11 +18,12 @@ server:
   servlet:
     context-path: /identity
 
-api:
-  gate-way: http://localhost:8222/api/v1/identity/auth
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
 
 jwt:
-  expiration: 86400
+  access-token-expiration: 1800
+  refresh-token-expiration: 604800
   secretKey: LuNVqXkIK/leKNt+xBkwXK+K25U9cFa2E6v735ZSOQuEIF3B2bvwpEd9UDXiXsZ9SLC1kh4MyTaAxU6Vnq+NeQ==
 
 LEGEND:

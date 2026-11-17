@@ -15,6 +15,7 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderConfirm {
+    private String customerId;
     private String orderReference;
     private BigDecimal totalAmount;
     private PaymentMethod paymentMethod;

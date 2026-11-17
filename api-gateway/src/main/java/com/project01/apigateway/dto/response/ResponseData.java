@@ -8,10 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-/**
- * Bản sao cấu trúc ResponseData của common-core. Gateway chạy WebFlux nên không dùng được
- * common-core (servlet), nhưng phải trả lỗi cùng format JSON với các service phía sau.
- */
 @Data
 @Builder
 @AllArgsConstructor

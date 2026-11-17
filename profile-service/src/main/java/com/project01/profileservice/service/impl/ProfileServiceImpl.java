@@ -23,6 +23,10 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public void createProfile(RegisterDTO registerDTO) {
+        // Idempotent: identity-service có thể gọi lại khi lần trước lỗi giữa chừng, không tạo hồ sơ trùng
+        if (profileRepository.findByUserid(registerDTO.getUserid()).isPresent()) {
+            return;
+        }
         ProfileEntity profileEntity = modelMapper.map(registerDTO, ProfileEntity.class);
         profileRepository.save(profileEntity);
     }

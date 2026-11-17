@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PaymentConfirm {
+    private String customerId;
     private String orderReference;
     private BigDecimal amount;
     private PaymentMethod paymentMethod;

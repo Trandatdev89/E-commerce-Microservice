@@ -14,7 +14,6 @@ public interface RoleRepository extends JpaRepository<RoleEntity, Long> {
 
     Optional<RoleEntity> findByCode(String code);
 
-    /** Join thủ công idt_account_role -> idt_role bằng role_id, không qua quan hệ JPA. */
     @Query("""
             select r.code from RoleEntity r, AccountRoleEntity ar
             where ar.roleId = r.id and ar.accountId = :accountId and r.isActive = true

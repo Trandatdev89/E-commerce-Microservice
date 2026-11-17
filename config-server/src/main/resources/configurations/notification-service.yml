@@ -7,6 +7,7 @@ spring:
       port: 27017
       database: Ecommerce
       authentication-database: admin
+      auto-index-creation: true
   kafka:
     bootstrap-servers: localhost:9092
 
@@ -16,8 +17,10 @@ server:
     context-path: /notification
 
 mailjet:
-  api-key: 61a7d3173515fb84be6d8a2c6ce433fe
-  api-secretKey: 470eeb057bc489f636bbe96ee0b952aa
+  api-key: ${MAILJET_API_KEY:61a7d3173515fb84be6d8a2c6ce433fe}
+  api-secret-key: ${MAILJET_API_SECRET:470eeb057bc489f636bbe96ee0b952aa}
+  from-email: ${MAILJET_FROM_EMAIL:tranquocdat30122004@gmail.com}
+  from-name: ${MAILJET_FROM_NAME:Tran Quoc Dat}
 
 springdoc:
   swagger-ui:

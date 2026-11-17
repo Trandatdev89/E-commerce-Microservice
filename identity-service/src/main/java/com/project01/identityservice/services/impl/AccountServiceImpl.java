@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,7 +46,9 @@ public class AccountServiceImpl implements AccountService {
         return toAccountDTOs(accountRepository.findAllByUsernameContaining(username));
     }
 
-    /** Lấy role của cả danh sách tài khoản bằng 2 query, tránh N+1. */
+    /**
+     * Lấy role của cả danh sách tài khoản bằng 2 query, tránh N+1.
+     */
     private List<AccountDTO> toAccountDTOs(List<AccountEntity> accounts) {
         if (accounts.isEmpty()) {
             return List.of();

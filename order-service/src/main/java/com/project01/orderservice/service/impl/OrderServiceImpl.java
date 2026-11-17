@@ -87,6 +87,7 @@ public class OrderServiceImpl implements OrderService {
         cartClient.deleteItemFromCart(skuIds, orderRequest.getCustomerId());
 
         orderProducer.sendOrderConfirm(OrderConfirm.builder()
+                .customerId(order.getCustomerId())
                 .orderReference(order.getOrderCode())
                 .paymentMethod(order.getPaymentMethod())
                 .products(purchases)

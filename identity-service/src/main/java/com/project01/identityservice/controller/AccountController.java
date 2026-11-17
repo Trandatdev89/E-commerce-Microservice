@@ -44,5 +44,4 @@ public class AccountController {
         return new ResponseData<AccountDTO>().success(accountService.getAccountById(id));
     }
 
-
 }

@@ -23,4 +23,7 @@ public class AccountDTO {
     private LocalDateTime lastLoginAt;
     @Builder.Default
     private List<String> roles = new ArrayList<>();
+    private String deviceLogin;
+    private String addressLogin;
+
 }

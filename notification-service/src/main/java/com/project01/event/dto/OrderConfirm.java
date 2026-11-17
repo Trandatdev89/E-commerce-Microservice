@@ -1,27 +1,25 @@
 package com.project01.event.dto;
 
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.project01.notificationservice.kafka.order.ProfileDTO;
-import com.project01.notificationservice.kafka.order.PurchaseResponse;
-import com.project01.notificationservice.kafka.payment.PaymentMethod;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 
-
+/**
+ * Event order-service gửi lên topic "order-topic" khi đặt hàng thành công.
+ * Giữ nguyên package com.project01.event.dto vì JsonSerializer của bên gửi ghi tên class vào header.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class OrderConfirm  {
-    private String orderReference;
-    private BigDecimal totalAmount;
-    private PaymentMethod paymentMethod;
-    private ProfileDTO customer;
-    private List<PurchaseResponse> products;
+public class OrderConfirm {
+    String customerId;
+    String orderReference;
+    BigDecimal totalAmount;
+    PaymentMethod paymentMethod;
+    ProfileDTO customer;
+    List<PurchaseResponse> products;
 }

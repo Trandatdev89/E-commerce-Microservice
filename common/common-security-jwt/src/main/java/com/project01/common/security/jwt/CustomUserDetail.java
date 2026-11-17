@@ -21,7 +21,6 @@ public class CustomUserDetail implements UserDetails {
     private String userId;
     private String username;
     private String password;
-    /** Mã role (idt_role.code), không có tiền tố ROLE_, vd ["ADMIN", "CLIENT"] */
     private List<String> roles = new ArrayList<>();
     private boolean accountNonLocked;
     private boolean enabled;
